@@ -10,6 +10,7 @@ import {
   MapsTooltip,
   Inject,
 } from "@syncfusion/ej2-react-maps";
+import { Link } from "react-router-dom";
 
 export default function CrimeMap() {
   const [worldMap, setWorldMap] = useState(null);
@@ -64,7 +65,17 @@ export default function CrimeMap() {
 
   return (
     <div className="h-screen w-full bg-gray-900 p-4">
-      <h2 className="text-white text-xl font-bold mb-4">Crime Map</h2>
+      {/* Navbar */}
+      <nav className="w-full max-w-3xl flex justify-between items-center py-3 border-b border-gray-700">
+        <h1 className="text-gray-300 text-xl font-bold">CrimeWatch</h1>
+        <div className="space-x-4">
+          <Link to="/" className="text-gray-300 hover:text-white">Home</Link>
+          <Link to="/map" className="text-gray-300 hover:text-white">Map</Link>
+          <Link to="/report" className="text-gray-300 hover:text-white">Report</Link>
+          <Link to="/stats" className="text-gray-300 hover:text-white">Stats</Link>
+        </div>
+      </nav>
+      
       <MapsComponent zoomSettings={{ enable: true }} background="black">
         <Inject services={[Zoom, Marker, MapsTooltip]} />
         

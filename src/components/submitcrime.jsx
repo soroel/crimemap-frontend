@@ -87,6 +87,7 @@ export default function CrimeReportForm() {
       <Link to="/" className="text-gray-300 hover:text-white">Home</Link>
       <Link to="/map" className="text-gray-300 hover:text-white">Map</Link>
       <Link to="/report" className="text-gray-300 hover:text-white">Report</Link>
+      <Link to="/stats" className="text-gray-300 hover:text-white">Stats</Link>
     </div>
   </nav>
 

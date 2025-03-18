@@ -3,6 +3,9 @@
     "version": "0.1.0",
     "private": true,
     "dependencies": {
+        "@syncfusion/ej2-charts": "^28.2.11",
+        "@syncfusion/ej2-react-charts": "^28.2.11",
+        "@syncfusion/ej2-react-heatmap": "^28.2.3",
         "@syncfusion/ej2-react-maps": "^28.2.9",
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
