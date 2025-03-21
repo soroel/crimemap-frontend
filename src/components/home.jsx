@@ -16,7 +16,7 @@ export default function LandingPage() {
         />
 
         {/* Navbar Overlay with Background for Readability */}
-        <div className="absolute top-0 left-0 w-full bg-black bg-opacity-40">
+        <div className="absolute top-0 left-0 w-full bg-black bg-opacity-40 z-50">
           <Navbar />
         </div>
 
