@@ -17,6 +17,7 @@ import {
     Legend as HeatMapLegend,
     Tooltip as HeatMapTooltip
 } from "@syncfusion/ej2-react-heatmap";
+import Navbar from "./navbar";
 
 const CrimeStatsDashboard = () => {
   const [crimeData, setCrimeData] = useState([]);
@@ -43,16 +44,7 @@ const CrimeStatsDashboard = () => {
   return (
     <div className="p-6 bg-gray-900 text-white min-h-screen">
       
-      {/* ✅ Fixed Navbar */}
-      <nav className="w-full flex justify-between items-center py-3 border-b border-gray-700 mb-4">
-        <h1 className="text-xl font-bold">CrimeWatch</h1>
-        <div className="space-x-4">
-          <Link to="/" className="text-gray-300 hover:text-white">Home</Link>
-          <Link to="/map" className="text-gray-300 hover:text-white">Map</Link>
-          <Link to="/report" className="text-gray-300 hover:text-white">Report</Link>
-          <Link to="/stats" className="text-gray-300 hover:text-white">Stats</Link>
-        </div>
-      </nav>
+      <Navbar />
 
       <h2 className="text-2xl font-bold mb-4">Crime Statistics & Analytics</h2>
 
