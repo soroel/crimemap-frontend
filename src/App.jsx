@@ -9,6 +9,7 @@ import UserDashboard from "./components/dashboard";
 import Login from "./components/login";
 import Navbar from "./components/navbar";
 import Register from "./components/Register";
+import LatestCrimeReports from "./components/LatestCrimeReports";
 
 function App() {
   return (
@@ -23,6 +24,8 @@ function App() {
         <Route path="/login" element={< Login/>} />
         <Route path="/navbar" element={< Navbar/>} />
         <Route path="/register" element={< Register/>} />
+        <Route path="/LatestCrimeReports" element={< LatestCrimeReports/>} />
+
     
         
       </Routes>

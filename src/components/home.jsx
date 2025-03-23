@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom"; // ✅ Import useNavigate
 import Navbar from "./navbar";
+import LatestCrimeReports from "./LatestCrimeReports";
 
 export default function LandingPage() {
   const navigate = useNavigate(); // ✅ Define navigate function
@@ -46,21 +47,7 @@ export default function LandingPage() {
           Report a Crime
         </button>
       </div>
-
-      {/* Latest Crime Reports */}
-      <section className="mt-8 w-full max-w-3xl px-6">
-        <h2 className="text-xl font-semibold mb-3">Latest Crime Reports</h2>
-        <div className="space-y-4">
-          <div className="bg-gray-800 p-4 rounded-lg">
-            <p className="text-red-400 font-bold">Robbery</p>
-            <p className="text-sm text-gray-300">📍 Nairobi, Westlands - 2 hours ago</p>
-          </div>
-          <div className="bg-gray-800 p-4 rounded-lg">
-            <p className="text-yellow-400 font-bold">Vandalism</p>
-            <p className="text-sm text-gray-300">📍 Mombasa, CBD - 5 hours ago</p>
-          </div>
-        </div>
-      </section>
-    </div>
+      <LatestCrimeReports />
+      </div>
   );
 }
