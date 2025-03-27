@@ -13,7 +13,7 @@ import LatestCrimeReports from "./components/LatestCrimeReports";
 
 function App() {
   return (
-    <>
+    
     
       <Routes>
         <Route path="/" element={< LandingPage/>} />
@@ -29,7 +29,7 @@ function App() {
     
         
       </Routes>
-      </>
+      
     
   );
 }

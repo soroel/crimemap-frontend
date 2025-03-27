@@ -23,9 +23,7 @@ export default function CrimeMap() {
     // Fetch World Map
     fetch("/custom.geo.json")
       .then((response) => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
+        if (!response.ok) throw new Error("Failed to fetch map data");
         return response.json();
       })
       .then((data) => {
@@ -34,20 +32,40 @@ export default function CrimeMap() {
       })
       .catch((err) => {
         console.error("❌ Error Loading Map:", err);
-        setError(err.message);
+        setError("Failed to load map data.");
       });
 
     // Fetch Crime Data
-    fetch("http://127.0.0.1:5000/api/heatmap-data") 
+    fetch("http://127.0.0.1:5000/api/heatmap-data")
       .then((response) => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
+        if (!response.ok) throw new Error("Failed to fetch crime data");
         return response.json();
       })
       .then((data) => {
         console.log("✅ Crime Data Loaded:", data);
-        setCrimeData(data);
+
+        // Group crimes by location (county)
+        const groupedCrimes = data.reduce((acc, crime) => {
+          const key = `${crime.latitude},${crime.longitude}`;
+
+          if (!acc[key]) {
+            acc[key] = {
+              county: crime.county,
+              latitude: crime.latitude,
+              longitude: crime.longitude,
+              crimes: [],
+            };
+          }
+
+          // Ensure valid crime data
+          if (crime.crime_type && crime.count !== undefined) {
+            acc[key].crimes.push(`${crime.crime_type}: ${crime.count}`);
+          }
+
+          return acc;
+        }, {});
+
+        setCrimeData(Object.values(groupedCrimes));
       })
       .catch((err) => {
         console.error("❌ Error Loading Crime Data:", err);
@@ -70,11 +88,10 @@ export default function CrimeMap() {
       
       <MapsComponent zoomSettings={{ enable: true }} background="black">
         <Inject services={[Zoom, Marker, MapsTooltip]} />
-        
+
         <LayersDirective>
           <LayerDirective shapeData={worldMap} shapeSettings={{ fill: "#444" }}>
-            {crimeData.length > 0 && (
-              <MarkersDirective>
+            <MarkersDirective>
               {crimeData.map((crime, index) => (
                 <MarkerDirective
                   key={index}
@@ -84,19 +101,21 @@ export default function CrimeMap() {
                   dataSource={[{
                     latitude: crime.latitude,
                     longitude: crime.longitude,
-                    intensity: crime.intensity,
+                    county: crime.county,
+                    crimeDetails: crime.crimes.length > 0 
+                      ? crime.crimes.join("<br>") 
+                      : "No data available",
                   }]}
                   tooltipSettings={{
                     visible: true,
-                    valuePath: "intensity",
-                    format: `<strong>Crime Intensity:</strong> ${crime.intensity}`,
+                    format: `<strong>County:</strong> ${crime.county} <br> 
+                             <strong>Crimes:</strong> <br> ${crime.crimes.length > 0 
+                               ? crime.crimes.join("<br>") 
+                               : "No data available"}`,
                   }}
                 />
               ))}
             </MarkersDirective>
-            
-            
-            )}
           </LayerDirective>
         </LayersDirective>
       </MapsComponent>

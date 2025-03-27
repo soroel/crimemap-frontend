@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { Link } from "react-router-dom";
 import Navbar from "./navbar";
 
 export default function CrimeReportForm() {
@@ -60,7 +59,7 @@ export default function CrimeReportForm() {
       latitude: userLocation.split(",")[0] || "",
       longitude: userLocation.split(",")[1] || "",
       description: data.description,
-      anonymous: data.anonymous ? true : false, // Ensure boolean is sent
+      anonymous: data.anonymous ? true : false, 
     };
   
     try {
@@ -68,7 +67,7 @@ export default function CrimeReportForm() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`, // Ensure correct format
+          Authorization: `Bearer ${token}`, 
         },
         body: JSON.stringify(requestBody),
       });
@@ -112,11 +111,24 @@ export default function CrimeReportForm() {
             className="w-full p-2 bg-gray-700 rounded"
             defaultValue=""
           >
-            <option value="" disabled>Select Crime Type</option>
-            <option value="Theft">Theft</option>
-            <option value="Assault">Assault</option>
-            <option value="Vandalism">Vandalism</option>
-            <option value="Fraud">Fraud</option>
+                          <option value="" disabled>Select Crime Type</option>
+              <option value="Theft">Theft</option>
+              <option value="Assault">Assault</option>
+              <option value="Robbery">Robbery</option>
+              <option value="Homicide">Homicide</option>
+              <option value="Vandalism">Vandalism</option>
+              <option value="Fraud">Fraud</option>
+              <option value="Bribery">Bribery</option>
+              <option value="Cybercrime">Cybercrime</option>
+              <option value="Drug Offense">Drug Offense</option>
+              <option value="Human Trafficking">Human Trafficking</option>
+              <option value="Domestic Violence">Domestic Violence</option>
+              <option value="Sexual Assault">Sexual Assault</option>
+              <option value="Arson">Arson</option>
+              <option value="Terrorism">Terrorism</option>
+              <option value="Extortion">Extortion</option>
+              <option value="Other">Other</option>
+
           </select>
           {errors.crimeType && <p className="text-red-400 text-sm">Crime type is required.</p>}
 
