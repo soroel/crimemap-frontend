@@ -31,13 +31,21 @@ const CrimeStatsDashboard = () => {
 
     // Fetch Heatmap Data
     fetch("http://127.0.0.1:5000/api/heatmap-data")
-      .then(response => response.json())
-      .then(data => {
-        // Ensure data is structured as a 2D array
-        const formattedData = data.map(row => Object.values(row));
-        setHeatmapData(formattedData);
-      })
-      .catch(error => console.error("Error fetching heatmap data:", error));
+    .then(response => response.json())
+    .then(data => {
+      if (!Array.isArray(data)) {
+        console.error("Invalid heatmap data format:", data);
+        return;
+      }
+      // Ensure each item has x, y, and value
+      const formattedData = data.map(item => ({
+        x: item.x || "Unknown",
+        y: item.y || "Unknown",
+        value: item.value || 0,
+      }));
+      setHeatmapData(formattedData);
+    })
+    .catch(error => console.error("Error fetching heatmap data:", error));
   }, []);
 
   return (
