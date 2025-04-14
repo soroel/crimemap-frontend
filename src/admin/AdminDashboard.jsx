@@ -139,7 +139,7 @@ const AdminDashboard = () => {
             title="Recent Crime Reports"
             data={crimeReports}
             columns={[
-              { header: 'Type', accessor: 'type' },
+              { header: 'Type', accessor: 'category' },
               { header: 'Location', accessor: 'location' }
             ]}
             loading={loading.crimeReports}
@@ -160,11 +160,14 @@ const AdminDashboard = () => {
                 accessor: 'severity',
                 cell: (value) => (
                   <span className={`font-bold ${
+                    value === 'critical' ? 'text-red-700' : 
                     value === 'high' ? 'text-red-500' : 
-                    value === 'medium' ? 'text-yellow-500' : 'text-green-500'
+                    value === 'medium' ? 'text-yellow-500' : 
+                    value === 'low' ? 'text-green-500' : 'text-gray-500'
                   }`}>
                     {value}
                   </span>
+                  
                 )
               }
             ]}
