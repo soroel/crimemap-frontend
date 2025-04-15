@@ -21,19 +21,21 @@ export default function CrimeReportForm() {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
-          const locationString = `${latitude}, ${longitude}`;
+          const locationString = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
           setUserLocation(locationString);
           setValue("location", locationString);
         },
         (error) => {
           console.error("Error getting location:", error);
-          setUserLocation("Unable to fetch location");
-          setValue("location", "Unable to fetch location");
+          const fallback = "Unable to fetch location";
+          setUserLocation(fallback);
+          setValue("location", fallback);
         }
       );
     } else {
-      setUserLocation("Geolocation not supported");
-      setValue("location", "Geolocation not supported");
+      const fallback = "Geolocation not supported";
+      setUserLocation(fallback);
+      setValue("location", fallback);
     }
   }, [setValue]);
 
@@ -41,46 +43,39 @@ export default function CrimeReportForm() {
     setLoading(true);
     setError(null);
     setSuccess(false);
-  
+
     const token = localStorage.getItem("token");
-  
     if (!token) {
       setError("Authentication error: No token found. Please log in.");
       setLoading(false);
       return;
     }
-  
-    console.log("Access Token:", token); // Debugging: Ensure token is retrieved
-  
-    // Construct JSON payload
+
+    const [lat, lng] = userLocation.split(",").map(val => val?.trim() || "");
+
     const requestBody = {
       category: data.crimeType,
-      date: new Date().toISOString().split("T")[0], // Format date as YYYY-MM-DD
-      latitude: userLocation.split(",")[0] || "",
-      longitude: userLocation.split(",")[1] || "",
+      date: new Date().toISOString().split("T")[0],
+      latitude: lat || "",
+      longitude: lng || "",
       description: data.description,
-      anonymous: data.anonymous ? true : false, 
+      anonymous: !!data.anonymous,
     };
-  
+
     try {
       const response = await fetch("http://127.0.0.1:5000/api/submitcrime", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`, 
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(requestBody),
       });
-  
+
       const responseData = await response.json();
-      console.log("API Response:", responseData); // Debugging
-  
-      if (!response.ok) {
-        throw new Error(responseData.error || "Failed to submit crime report.");
-      }
-  
+      if (!response.ok) throw new Error(responseData.error || "Failed to submit crime report.");
+
       setSuccess(true);
-  
       setTimeout(() => {
         reset();
         setSuccess(false);
@@ -92,8 +87,6 @@ export default function CrimeReportForm() {
       setLoading(false);
     }
   };
-  
-  
 
   return (
     <div className="h-screen w-full bg-gray-900 p-6 flex flex-col items-center">
@@ -105,13 +98,14 @@ export default function CrimeReportForm() {
         {error && <p className="text-red-400">❌ {error}</p>}
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <label>Crime Type</label>
-          <select
-            {...register("crimeType", { required: true })}
-            className="w-full p-2 bg-gray-700 rounded"
-            defaultValue=""
-          >
-                          <option value="" disabled>Select Crime Type</option>
+          <div>
+            <label>Crime Type</label>
+            <select
+              {...register("crimeType", { required: true })}
+              className="w-full p-2 bg-gray-700 rounded mt-1"
+              defaultValue=""
+            >
+              <option value="" disabled>Select Crime Type</option>
               <option value="Theft">Theft</option>
               <option value="Assault">Assault</option>
               <option value="Robbery">Robbery</option>
@@ -128,26 +122,30 @@ export default function CrimeReportForm() {
               <option value="Terrorism">Terrorism</option>
               <option value="Extortion">Extortion</option>
               <option value="Other">Other</option>
+            </select>
+            {errors.crimeType && <p className="text-red-400 text-sm">Crime type is required.</p>}
+          </div>
 
-          </select>
-          {errors.crimeType && <p className="text-red-400 text-sm">Crime type is required.</p>}
+          <div>
+            <label>Location</label>
+            <input
+              {...register("location", { required: true })}
+              className="w-full p-2 bg-gray-700 rounded mt-1"
+              value={userLocation}
+              readOnly
+            />
+            {errors.location && <p className="text-red-400 text-sm">Location is required.</p>}
+          </div>
 
-          <label>Location</label>
-          <input
-            {...register("location", { required: true })}
-            className="w-full p-2 bg-gray-700 rounded"
-            value={userLocation}
-            readOnly
-          />
-          {errors.location && <p className="text-red-400 text-sm">Location is required.</p>}
-
-          <label>Description</label>
-          <textarea
-            {...register("description", { required: true })}
-            className="w-full p-2 bg-gray-700 rounded"
-            placeholder="Provide details..."
-          />
-          {errors.description && <p className="text-red-400 text-sm">Description is required.</p>}
+          <div>
+            <label>Description</label>
+            <textarea
+              {...register("description", { required: true })}
+              className="w-full p-2 bg-gray-700 rounded mt-1"
+              placeholder="Provide details..."
+            />
+            {errors.description && <p className="text-red-400 text-sm">Description is required.</p>}
+          </div>
 
           <div className="flex items-center">
             <input type="checkbox" {...register("anonymous")} className="mr-2" />

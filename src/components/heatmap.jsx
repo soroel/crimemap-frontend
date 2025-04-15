@@ -79,13 +79,27 @@ export default function CrimeMap() {
     return "#22c55e";
   };
 
-  const filteredData = crimeData.filter((location) =>
-    filterType === "All"
-      ? true
-      : location.crimes.some(
-          (c) => c.crime_type.toLowerCase().trim() === filterType.toLowerCase().trim()
-        )
-  );
+  const filteredData =
+  filterType === "All"
+    ? crimeData
+    : crimeData
+        .map((location) => {
+          const matchingCrime = location.crimes.find(
+            (c) =>
+              c.crime_type.toLowerCase().trim() ===
+              filterType.toLowerCase().trim()
+          );
+          if (matchingCrime) {
+            return {
+              ...location,
+              crimes: [matchingCrime],
+              totalCount: matchingCrime.count,
+            };
+          }
+          return null;
+        })
+        .filter(Boolean);
+
 
   return (
     <div className="relative h-screen bg-[#121212] text-white overflow-hidden">
