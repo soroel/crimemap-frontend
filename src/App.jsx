@@ -13,6 +13,8 @@ import UserDashboard from "./components/dashboard";
 import LatestCrimeReports from "./components/LatestCrimeReports";
 import AuthGuard from "./components/AuthGuard";
 import { Outlet } from "react-router-dom";
+import MapTabs from "./components/MapTabs";
+import GISAnalysis from "./components/GISAnalysis";
 
 const ProtectedRoute = ({ allowedRoles }) => (
   <AuthGuard allowedRoles={allowedRoles}>
@@ -26,7 +28,9 @@ function App() {
       <Routes>
         {/* Public routes */}
         <Route path="/" element={<LandingPage />} />
-        <Route path="/map" element={<CrimeMap />} />
+        <Route path="/map" element={<MapTabs />} />
+        <Route path="/gis" element={<GISAnalysis />} />
+        {/* <Route path="/map" element={<CrimeMap />} /> */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/LatestCrimeReports" element={<LatestCrimeReports />} />

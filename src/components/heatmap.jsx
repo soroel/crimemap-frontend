@@ -34,9 +34,6 @@ export default function CrimeMap() {
         const mapResponse = await fetch("/custom.geo.json");
         if (!mapResponse.ok) throw new Error("Failed to load map data");
         const mapData = await mapResponse.json();
-        if (!mapData || typeof mapData !== 'object') {
-          throw new Error("Invalid map data format");
-        }
         setWorldMap(mapData);
 
         // Fetch crime data
@@ -79,15 +76,13 @@ export default function CrimeMap() {
     return "#22c55e";
   };
 
-  const filteredData =
-  filterType === "All"
+  const filteredData = filterType === "All"
     ? crimeData
     : crimeData
         .map((location) => {
           const matchingCrime = location.crimes.find(
             (c) =>
-              c.crime_type.toLowerCase().trim() ===
-              filterType.toLowerCase().trim()
+              c.crime_type.toLowerCase().trim() === filterType.toLowerCase().trim()
           );
           if (matchingCrime) {
             return {
@@ -100,10 +95,9 @@ export default function CrimeMap() {
         })
         .filter(Boolean);
 
-
   return (
     <div className="relative h-screen bg-[#121212] text-white overflow-hidden">
-      <Navbar />
+      {/* <Navbar /> */}
 
       {/* Sidebar */}
       <aside className="absolute top-20 left-4 bg-[#1f1f1f] p-4 rounded-lg w-64 shadow-lg z-10">
@@ -153,6 +147,17 @@ export default function CrimeMap() {
             background="#121212"
             titleSettings={{ text: "Crime Heatmap", textStyle: { color: "#fff" } }}
             loaded={() => console.log("Map loaded successfully")}
+            markerClick={(args) => {
+              const markerData = args.data;
+              const found = filteredData.find(
+                (loc) =>
+                  loc.latitude === markerData.latitude &&
+                  loc.longitude === markerData.longitude
+              );
+              if (found) {
+                setSelectedCrime(found);
+              }
+            }}
           >
             <Inject services={[Zoom, Marker, MapsTooltip]} />
             <LayersDirective>
@@ -174,17 +179,18 @@ export default function CrimeMap() {
                         shape="Circle"
                         fill={colorScale(loc.totalCount)}
                         animationDuration={0}
-                        dataSource={[{
-                          latitude: loc.latitude,
-                          longitude: loc.longitude,
-                          name: loc.county,
-                        }]}
+                        dataSource={[
+                          {
+                            latitude: loc.latitude,
+                            longitude: loc.longitude,
+                            name: loc.county,
+                          },
+                        ]}
                         tooltipSettings={{
                           visible: true,
                           valuePath: "name",
                           format: `<strong>${loc.county}</strong><br/>Total crimes: ${loc.totalCount}`,
                         }}
-                        click={() => setSelectedCrime(loc)}
                       />
                     ))}
                   </MarkersDirective>
