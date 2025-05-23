@@ -20,6 +20,7 @@ const getTokenExpirationTime = (token) => {
     const decoded = jwtDecode(token);
     return decoded.exp * 1000; // Convert to milliseconds
   } catch (error) {
+    console.error("Error decoding token:", error);
     return null;
   }
 };
@@ -63,18 +64,21 @@ api.interceptors.response.use(
         // Try to refresh the token
         const refreshToken = localStorage.getItem('refreshToken');
         if (refreshToken) {
+          console.log("Trying to refresh token with API");
           const response = await axios.post('http://localhost:5000/api/refresh-token', {
             refreshToken
           });
 
           const { token } = response.data;
           localStorage.setItem('token', token);
+          console.log("Token refreshed successfully");
 
           // Retry the original request with new token
           originalRequest.headers.Authorization = `Bearer ${token}`;
           return api(originalRequest);
         }
       } catch (refreshError) {
+        console.error("Token refresh failed:", refreshError);
         // If refresh token fails, logout user
         window.dispatchEvent(new Event('auth:logout'));
         return Promise.reject(refreshError);
@@ -100,22 +104,27 @@ export const AuthProvider = ({ children }) => {
       const refreshTokenValue = localStorage.getItem('refreshToken');
 
       if (!currentToken || !refreshTokenValue) {
+        console.log("No tokens available for refresh");
         throw new Error('No tokens available');
       }
 
+      console.log("Checking if token needs refresh...");
       if (shouldRefreshToken(currentToken)) {
+        console.log("Token needs refreshing, sending request");
         const response = await axios.post('http://localhost:5000/api/refresh-token', {
           refreshToken: refreshTokenValue
         });
 
         const { token } = response.data;
         localStorage.setItem('token', token);
+        console.log("Token refreshed in refresh function");
 
         // Schedule next token refresh
         const expirationTime = getTokenExpirationTime(token);
         if (expirationTime) {
           const timeUntilRefresh = Math.max(0, expirationTime - Date.now() - 5 * 60 * 1000);
           setTimeout(refreshToken, timeUntilRefresh);
+          console.log(`Next token refresh scheduled in ${timeUntilRefresh/1000/60} minutes`);
         }
       }
     } catch (error) {
@@ -124,41 +133,89 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  const logout = useCallback(() => {
+    console.log("Logging out user, clearing storage");
+    // Clear all auth-related storage
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
+    sessionStorage.removeItem('sessionActive');
+
+    setAuthState({
+      user: null,
+      isAuthenticated: false,
+      isLoading: false
+    });
+
+    // Notify other tabs about logout
+    window.dispatchEvent(new Event('auth:logout'));
+  }, []);
+
   // Initialize auth and set up token refresh
   useEffect(() => {
+    console.log("Initializing auth context");
     const initializeAuth = async () => {
+      console.log("Checking for stored authentication data");
       const token = localStorage.getItem('token');
-      const userData = localStorage.getItem('user');
+      const userDataStr = localStorage.getItem('user');
+      let userData = null;
+      
+      try {
+        userData = userDataStr ? JSON.parse(userDataStr) : null;
+      } catch (e) {
+        console.error("Error parsing stored user data:", e);
+      }
 
+      console.log("Token exists:", !!token, "User data exists:", !!userData);
+      
       if (token && userData) {
         try {
-          // First, check if we need to refresh the token
-          await refreshToken();
+          // First, verify the token is valid by decoding it
+          const decodedToken = jwtDecode(token);
+          const currentTime = Date.now() / 1000;
+          
+          if (decodedToken.exp < currentTime) {
+            console.log("Token is expired, attempting refresh");
+            // Token is expired, try to refresh it
+            await refreshToken();
+          }
 
+          console.log("Verifying token with API");
           // Verify token and get fresh user data
           const response = await api.get('/verify-token');
-          const freshUserData = response.data;
+          console.log("Token verification response:", response.data);
           
-          // Update localStorage with fresh data
-          localStorage.setItem('user', JSON.stringify(freshUserData));
-          
-          setAuthState({
-            user: freshUserData,
-            isAuthenticated: true,
-            isLoading: false
-          });
+          if (response.data.isValid) {
+            const freshUserData = response.data.user;
+            
+            // Update localStorage with fresh data
+            localStorage.setItem('user', JSON.stringify(freshUserData));
+            sessionStorage.setItem('sessionActive', 'true');
+            
+            console.log("Setting authenticated state with user:", freshUserData);
+            setAuthState({
+              user: freshUserData,
+              isAuthenticated: true,
+              isLoading: false
+            });
 
-          // Set up periodic token refresh
-          const expirationTime = getTokenExpirationTime(token);
-          if (expirationTime) {
-            const timeUntilRefresh = Math.max(0, expirationTime - Date.now() - 5 * 60 * 1000);
-            setTimeout(refreshToken, timeUntilRefresh);
+            // Set up periodic token refresh
+            const expirationTime = getTokenExpirationTime(token);
+            if (expirationTime) {
+              const timeUntilRefresh = Math.max(0, expirationTime - Date.now() - 5 * 60 * 1000);
+              console.log(`Scheduling token refresh in ${timeUntilRefresh/1000/60} minutes`);
+              setTimeout(refreshToken, timeUntilRefresh);
+            }
+          } else {
+            console.log("Token is invalid, logging out");
+            logout();
           }
         } catch (error) {
           console.error('Auth initialization failed:', error);
           logout();
         }
       } else {
+        console.log("No authentication data found, setting unauthenticated state");
         setAuthState(prev => ({ ...prev, isLoading: false }));
       }
     };
@@ -181,18 +238,29 @@ export const AuthProvider = ({ children }) => {
       window.removeEventListener('auth:logout', handleLogout);
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [refreshToken]);
+  }, [refreshToken, logout]);
 
-  const login = async (token, userData, refreshToken = null) => {
-    localStorage.setItem('token', token);
-    if (refreshToken) {
-      localStorage.setItem('refreshToken', refreshToken);
+  const login = async (token, userData, refreshTokenValue = null) => {
+    console.log("Login called with token and user data:", !!token, userData);
+    
+    if (!token) {
+      console.error("No token provided to login function");
+      return;
     }
+    
+    localStorage.setItem('token', token);
+    
+    if (refreshTokenValue) {
+      console.log("Saving refresh token");
+      localStorage.setItem('refreshToken', refreshTokenValue);
+    }
+    
     localStorage.setItem('user', JSON.stringify(userData));
     
     // Set session storage to track active session
     sessionStorage.setItem('sessionActive', 'true');
     
+    console.log("Setting authenticated state after login");
     setAuthState({
       user: userData,
       isAuthenticated: true,
@@ -203,25 +271,9 @@ export const AuthProvider = ({ children }) => {
     const expirationTime = getTokenExpirationTime(token);
     if (expirationTime) {
       const timeUntilRefresh = Math.max(0, expirationTime - Date.now() - 5 * 60 * 1000);
+      console.log(`Scheduling initial token refresh in ${timeUntilRefresh/1000/60} minutes`);
       setTimeout(refreshToken, timeUntilRefresh);
     }
-  };
-
-  const logout = () => {
-    // Clear all auth-related storage
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user');
-    sessionStorage.removeItem('sessionActive');
-
-    setAuthState({
-      user: null,
-      isAuthenticated: false,
-      isLoading: false
-    });
-
-    // Notify other tabs about logout
-    window.dispatchEvent(new Event('auth:logout'));
   };
 
   // Method to check if session is active

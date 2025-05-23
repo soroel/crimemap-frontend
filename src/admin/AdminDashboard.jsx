@@ -78,17 +78,46 @@ const AdminDashboard = () => {
   // User CRUD operations
   const handleUserSubmit = async (data) => {
     try {
+      console.log("Submitting user data:", { ...data, password: data.password ? '[REDACTED]' : undefined });
+      
       if (selectedUser) {
-        await api.put(`/users/${selectedUser.id}`, data);
+        // Update existing user
+        const response = await api.put(`/users/${selectedUser.id}`, data);
+        console.log("User update response:", response.data);
         setUsers(users.map(u => u.id === selectedUser.id ? { ...u, ...data } : u));
       } else {
-        const response = await api.post('/users', data);
-        setUsers([...users, response.data]);
+        // Create new user - ensure password is included
+        if (!data.password) {
+          alert('Password is required for new users');
+          return;
+        }
+        
+        // Send request to create user
+        console.log("Creating new user with username:", data.username);
+        const response = await api.post('/users', {
+          username: data.username,
+          password: data.password,
+          role: data.role || 'user'
+        });
+        
+        console.log("User creation response:", response.data);
+        
+        // If we got a user object back in the response, add it to our list
+        if (response.data && response.data.user) {
+          setUsers([...users, response.data.user]);
+        } else if (response.data && response.data.success) {
+          // Otherwise refresh the user list
+          fetchData();
+        }
       }
+      
+      // Close modal and reset selection
       setShowUserModal(false);
       setSelectedUser(null);
     } catch (err) {
-      alert('Failed to ' + (selectedUser ? 'update' : 'create') + ' user: ' + err.message);
+      console.error("User operation error:", err);
+      const errorMessage = err.response?.data?.error || err.message || 'An unknown error occurred';
+      alert('Failed to ' + (selectedUser ? 'update' : 'create') + ' user: ' + errorMessage);
     }
   };
 

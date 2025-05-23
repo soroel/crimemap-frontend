@@ -6,8 +6,11 @@ const UserForm = ({ user, onSubmit, onCancel }) => {
     defaultValues: {
       username: user?.username || '',
       role: user?.role || 'user',
+      password: '',
     }
   });
+
+  const isNewUser = !user;
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -16,11 +19,29 @@ const UserForm = ({ user, onSubmit, onCancel }) => {
         <input
           {...register('username', { required: 'Username is required' })}
           className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white"
+          placeholder="Enter username"
         />
         {errors.username && (
           <p className="text-red-500 text-sm mt-1">{errors.username.message}</p>
         )}
       </div>
+
+      {isNewUser && (
+        <div>
+          <label className="block text-sm font-medium text-gray-200">Password</label>
+          <input
+            type="password"
+            {...register('password', { 
+              required: isNewUser ? 'Password is required for new users' : false 
+            })}
+            className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white"
+            placeholder="Enter password"
+          />
+          {errors.password && (
+            <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>
+          )}
+        </div>
+      )}
 
       <div>
         <label className="block text-sm font-medium text-gray-200">Role</label>

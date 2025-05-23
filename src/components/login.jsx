@@ -35,7 +35,11 @@ const Login = () => {
 
       console.log("✅ Login successful:", response.data);
       
-      login(response.data.token, response.data.user);
+      login(
+        response.data.token, 
+        response.data.user, 
+        response.data.refreshToken
+      );
 
       const redirectPath = location.state?.from?.pathname || 
                            (response.data.user.role === "admin" ? "/admin/dashboard" : "/");
