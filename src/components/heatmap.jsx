@@ -350,13 +350,13 @@ export default function CrimeMap() {
                       <MarkerDirective
                         key={i}
                         visible={true}
-                        height={20}
-                        width={20}
+                        height={15}
+                        width={15}
                         shape="Circle"
-                        fill={colors.fill}
-                        border={{ color: "transparent", width: 0 }}
-                        animationDuration={800}
-                        opacity={0.9}
+                        fill={colors.base}
+                        border={{ color: colors.base, width: 0 }}
+                        animationDuration={0}
+                        opacity={1}
                         dataSource={[{
                             latitude: loc.latitude,
                             longitude: loc.longitude,
@@ -430,10 +430,10 @@ export default function CrimeMap() {
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
-              <h1 className="text-xl font-semibold flex items-center">
+              {/* <h1 className="text-xl font-semibold flex items-center">
                 <Map className="w-6 h-6 mr-2" />
                 GIS Analysis
-              </h1>
+              </h1> */}
               <div className="border-l border-gray-700 h-6 mx-2" />
               <nav className="flex space-x-4">
                 <button

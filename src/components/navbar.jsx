@@ -28,10 +28,22 @@ export default function Navbar() {
             <Link to="/report" className="text-gray-300 hover:text-white">Report</Link>
             <Link to="/dashboard" className="text-gray-300 hover:text-white">Dashboard</Link>
 
-            {/* Stats Dropdown (Analytics only) */}
-            <Link to="/stats" className="text-gray-300 hover:text-white">
-              Stats
-            </Link>
+            {/* Stats Dropdown */}
+            <div
+              className="relative group"
+              onMouseEnter={() => setShowStatsMenu(true)}
+              onMouseLeave={() => setShowStatsMenu(false)}
+            >
+              <button className="text-gray-300 hover:text-white focus:outline-none">
+                Stats ▾
+              </button>
+              {showStatsMenu && (
+                <div className="absolute top-full left-0 bg-gray-800 rounded-md shadow-md py-2 z-10 w-40">
+                  <Link to="/stats" className="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-700">Analytics</Link>
+                  <Link to="/map" className="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-700">Heatmap</Link>
+                </div>
+              )}
+            </div>
           </>
         )}
 
