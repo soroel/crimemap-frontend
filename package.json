@@ -4,6 +4,7 @@
     "private": true,
     "dependencies": {
         "@radix-ui/react-slot": "^1.1.2",
+        "@react-google-maps/api": "^2.20.6",
         "@syncfusion/ej2-charts": "^28.2.11",
         "@syncfusion/ej2-react-charts": "^28.2.11",
         "@syncfusion/ej2-react-heatmap": "^28.2.3",

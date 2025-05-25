@@ -51,7 +51,7 @@ const UserForm = ({ user, onSubmit, onCancel }) => {
         >
           <option value="user">User</option>
           <option value="admin">Admin</option>
-          <option value="moderator">Moderator</option>
+          
         </select>
       </div>
 

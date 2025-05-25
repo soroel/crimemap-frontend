@@ -1,36 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-
-// Custom confirmation dialog component
-const ConfirmDialog = ({ isOpen, onClose, onConfirm, title, message }) => {
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
-        <h3 className="text-xl font-semibold mb-4">{title}</h3>
-        <p className="text-gray-300 mb-6">{message}</p>
-        <div className="flex justify-end space-x-4">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
-          >
-            Confirm
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 export default function AlertForm({ alerts: initialAlerts, onUpdate }) {
   const [form, setForm] = useState({
@@ -47,14 +17,6 @@ export default function AlertForm({ alerts: initialAlerts, onUpdate }) {
   const [editingAlert, setEditingAlert] = useState(null);
   const { api } = useAuth();
 
-  // Confirmation dialog state
-  const [confirmDialog, setConfirmDialog] = useState({
-    isOpen: false,
-    title: '',
-    message: '',
-    onConfirm: null
-  });
-
   useEffect(() => {
     if (initialAlerts) {
       setAlerts(initialAlerts);
@@ -70,13 +32,6 @@ export default function AlertForm({ alerts: initialAlerts, onUpdate }) {
       severity: "medium"
     });
     setEditingAlert(null);
-    // Show toast for cancelled edit
-    if (editingAlert) {
-      toast.info("Edit cancelled", {
-        position: "top-right",
-        autoClose: 2000
-      });
-    }
   };
 
   const handleSubmit = async (e) => {
@@ -91,16 +46,21 @@ export default function AlertForm({ alerts: initialAlerts, onUpdate }) {
           `/admin/alerts/${editingAlert.id}`,
           form
         );
-        if (response.status === 200) {
-          // Update alerts list
+        
+        if (response.data && response.data.success) {
+          // Update alerts list with the updated data
+          const updatedAlert = {
+            ...editingAlert,
+            ...form,
+            updated_at: new Date().toISOString()
+          };
           setAlerts(alerts.map(alert => 
-            alert.id === editingAlert.id ? { ...alert, ...form } : alert
+            alert.id === editingAlert.id ? updatedAlert : alert
           ));
-          toast.success("Alert updated successfully!", {
-            position: "top-right",
-            autoClose: 3000
-          });
+          alert("Alert updated successfully!");
           resetForm();
+        } else {
+          throw new Error(response.data?.error || response.data?.message || 'Failed to update alert');
         }
       } else {
         // Create new alert
@@ -110,93 +70,62 @@ export default function AlertForm({ alerts: initialAlerts, onUpdate }) {
           if (response.data && response.data.alert) {
             setAlerts([response.data.alert, ...alerts]);
           } else {
-            // Otherwise refresh the entire list
-            onUpdate?.();
+            // Create a new alert object with current timestamp
+            const newAlert = {
+              ...form,
+              id: Date.now(), // Temporary ID if not provided by server
+              created_at: new Date().toISOString()
+            };
+            setAlerts([newAlert, ...alerts]);
           }
-          toast.success("Alert created successfully!", {
-            position: "top-right",
-            autoClose: 3000
-          });
+          alert("Alert created successfully!");
           resetForm();
+        } else {
+          throw new Error(response.data?.error || response.data?.message || 'Failed to create alert');
         }
       }
     } catch (err) {
-      if (err.response?.data?.details) {
-        setErrors(err.response.data.details);
-        Object.keys(err.response.data.details).forEach(key => {
-          toast.error(`${key}: ${err.response.data.details[key]}`, {
-            position: "top-right",
-            autoClose: 4000
-          });
-        });
-      } else {
-        toast.error(err.response?.data?.error || "An error occurred", {
-          position: "top-right",
-          autoClose: 4000
-        });
-      }
+      console.error('Error submitting alert:', err);
+      const errorMessage = err.response?.data?.error || err.response?.data?.message || err.message || 'Failed to submit alert';
+      alert(`Error: ${errorMessage}`);
+      setErrors(err.response?.data?.details || {});
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleEdit = (alert) => {
-    if (editingAlert) {
-      // Show confirmation if already editing
-      setConfirmDialog({
-        isOpen: true,
-        title: "Switch Edit?",
-        message: "You have unsaved changes. Are you sure you want to edit a different alert?",
-        onConfirm: () => {
-          setForm({
-            username: alert.username || "all",
-            type: alert.type || "crime",
-            title: alert.title || "",
-            message: alert.message || "",
-            severity: alert.severity || "medium"
-          });
-          setEditingAlert(alert);
-          setConfirmDialog({ isOpen: false });
-          toast.info("Editing alert", { autoClose: 2000 });
-        }
-      });
-    } else {
-      setForm({
-        username: alert.username || "all",
-        type: alert.type || "crime",
-        title: alert.title || "",
-        message: alert.message || "",
-        severity: alert.severity || "medium"
-      });
-      setEditingAlert(alert);
-      toast.info("Editing alert", { autoClose: 2000 });
+    // Scroll form into view
+    const formElement = document.querySelector('#alertForm');
+    if (formElement) {
+      formElement.scrollIntoView({ behavior: 'smooth' });
     }
+
+    // Set form data
+    setForm({
+      username: alert.username || "all",
+      type: alert.type || "crime",
+      title: alert.title || "",
+      message: alert.message || "",
+      severity: alert.severity || "medium"
+    });
+    setEditingAlert(alert);
   };
 
   const handleDelete = async (alertId) => {
-    setConfirmDialog({
-      isOpen: true,
-      title: "Delete Alert",
-      message: "Are you sure you want to delete this alert? This action cannot be undone.",
-      onConfirm: async () => {
-        try {
-          const response = await api.delete(`/admin/alerts/${alertId}`);
-          if (response.status === 200) {
-            setAlerts(alerts.filter(alert => alert.id !== alertId));
-            toast.success("Alert deleted successfully", {
-              position: "top-right",
-              autoClose: 3000
-            });
-          }
-        } catch (err) {
-          toast.error(`Error deleting alert: ${err.response?.data?.error || err.message}`, {
-            position: "top-right",
-            autoClose: 4000
-          });
-        }
-        setConfirmDialog({ isOpen: false });
+    if (!window.confirm("Are you sure you want to delete this alert?")) {
+      return;
+    }
+
+    try {
+      const response = await api.delete(`/admin/alerts/${alertId}`);
+      if (response.status === 200) {
+        setAlerts(alerts.filter(alert => alert.id !== alertId));
+        alert("Alert deleted successfully!");
       }
-    });
+    } catch (err) {
+      alert(`Error deleting alert: ${err.response?.data?.error || err.message}`);
+    }
   };
 
   const getSeverityColor = (severity) => {
@@ -212,15 +141,6 @@ export default function AlertForm({ alerts: initialAlerts, onUpdate }) {
 
   return (
     <div className="p-4">
-      <ToastContainer theme="dark" />
-      <ConfirmDialog
-        isOpen={confirmDialog.isOpen}
-        title={confirmDialog.title}
-        message={confirmDialog.message}
-        onConfirm={confirmDialog.onConfirm}
-        onClose={() => setConfirmDialog({ isOpen: false })}
-      />
-      
       <h2 className="text-2xl font-bold mb-6 text-white">Alert Management</h2>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -277,91 +197,91 @@ export default function AlertForm({ alerts: initialAlerts, onUpdate }) {
 
         {/* Alert Form - Right Side */}
         <div className="lg:sticky lg:top-4">
-          <form onSubmit={handleSubmit} className="bg-gray-800 p-6 rounded-lg space-y-6">
+          <form id="alertForm" onSubmit={handleSubmit} className="bg-gray-800 p-6 rounded-lg space-y-6">
             <h3 className="text-xl font-semibold border-b border-gray-700 pb-2">
               {editingAlert ? 'Edit Alert' : 'Create New Alert'}
             </h3>
 
             <div className="space-y-4">
-              {/* Target User */}
-              <div>
+        {/* Target User */}
+        <div>
                 <label className="block text-sm font-medium mb-1 text-gray-300">Target User</label>
-                <input
-                  type="text"
-                  value={form.username}
+          <input
+            type="text"
+            value={form.username}
                   onChange={(e) => setForm({ ...form, username: e.target.value })}
-                  placeholder="Username or 'all'"
+            placeholder="Username or 'all'"
                   className={`w-full p-2 border ${errors.username ? 'border-red-500' : 'border-gray-700'} bg-gray-900 text-white rounded`}
-                />
+          />
                 {errors.username && <p className="text-red-500 text-sm">{errors.username}</p>}
-              </div>
-
-              {/* Alert Type */}
-              <div>
+        </div>
+        
+        {/* Alert Type */}
+        <div>
                 <label className="block text-sm font-medium mb-1 text-gray-300">Alert Type</label>
-                <select
-                  value={form.type}
+          <select
+            value={form.type}
                   onChange={(e) => setForm({ ...form, type: e.target.value })}
                   className={`w-full p-2 border ${errors.type ? 'border-red-500' : 'border-gray-700'} bg-gray-900 text-white rounded`}
-                >
-                  <option value="crime">Crime Alert</option>
-                  <option value="weather">Weather Alert</option>
-                  <option value="safety">Safety Tip</option>
-                  <option value="emergency">Emergency</option>
-                </select>
+          >
+            <option value="crime">Crime Alert</option>
+            <option value="weather">Weather Alert</option>
+            <option value="safety">Safety Tip</option>
+            <option value="emergency">Emergency</option>
+          </select>
                 {errors.type && <p className="text-red-500 text-sm">{errors.type}</p>}
-              </div>
+        </div>
 
-              {/* Title */}
-              <div>
+        {/* Title */}
+        <div>
                 <label className="block text-sm font-medium mb-1 text-gray-300">Title*</label>
-                <input
-                  type="text"
-                  value={form.title}
+          <input
+            type="text"
+            value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  placeholder="Alert Title"
+            placeholder="Alert Title"
                   className={`w-full p-2 border ${errors.title ? 'border-red-500' : 'border-gray-700'} bg-gray-900 text-white rounded`}
-                  required
-                />
+            required
+          />
                 {errors.title && <p className="text-red-500 text-sm">{errors.title}</p>}
-              </div>
+        </div>
 
-              {/* Message */}
-              <div>
+        {/* Message */}
+        <div>
                 <label className="block text-sm font-medium mb-1 text-gray-300">Message*</label>
-                <textarea
-                  value={form.message}
+          <textarea
+            value={form.message}
                   onChange={(e) => setForm({ ...form, message: e.target.value })}
                   rows={4}
-                  placeholder="Detailed alert message"
+            placeholder="Detailed alert message"
                   className={`w-full p-2 border ${errors.message ? 'border-red-500' : 'border-gray-700'} bg-gray-900 text-white rounded`}
-                  required
-                ></textarea>
+            required
+          ></textarea>
                 {errors.message && <p className="text-red-500 text-sm">{errors.message}</p>}
-              </div>
+        </div>
 
-              {/* Severity */}
-              <div>
+        {/* Severity */}
+        <div>
                 <label className="block text-sm font-medium mb-1 text-gray-300">Severity</label>
-                <select
-                  value={form.severity}
+          <select
+            value={form.severity}
                   onChange={(e) => setForm({ ...form, severity: e.target.value })}
                   className={`w-full p-2 border ${errors.severity ? 'border-red-500' : 'border-gray-700'} bg-gray-900 text-white rounded`}
-                >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                  <option value="critical">Critical</option>
-                </select>
+          >
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+            <option value="critical">Critical</option>
+          </select>
                 {errors.severity && <p className="text-red-500 text-sm">{errors.severity}</p>}
               </div>
-            </div>
+        </div>
 
             {/* Buttons */}
             <div className="flex gap-4 pt-4">
-              <button
-                type="submit"
-                disabled={isSubmitting}
+        <button 
+          type="submit"
+          disabled={isSubmitting}
                 className={`flex-1 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 {isSubmitting ? 'Sending...' : editingAlert ? 'Update Alert' : 'Send Alert'}
@@ -373,10 +293,10 @@ export default function AlertForm({ alerts: initialAlerts, onUpdate }) {
                   className="flex-1 bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 transition"
                 >
                   Cancel Edit
-                </button>
+        </button>
               )}
             </div>
-          </form>
+      </form>
         </div>
       </div>
     </div>

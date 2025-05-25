@@ -33,6 +33,15 @@ const AdminDashboard = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [selectedCrimeReport, setSelectedCrimeReport] = useState(null);
 
+  // Notification state
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'success') => {
+    setNotification({ message, type });
+    // Auto-hide notification after 3 seconds
+    setTimeout(() => setNotification(null), 3000);
+  };
+
   useEffect(() => {
     if (!isAuthenticated || !user || user.role !== 'admin') {
       navigate('/login');
@@ -85,39 +94,35 @@ const AdminDashboard = () => {
         const response = await api.put(`/users/${selectedUser.id}`, data);
         console.log("User update response:", response.data);
         setUsers(users.map(u => u.id === selectedUser.id ? { ...u, ...data } : u));
+        showNotification(`User ${data.username} updated successfully`);
       } else {
-        // Create new user - ensure password is included
+        // Create new user
         if (!data.password) {
-          alert('Password is required for new users');
+          showNotification('Password is required for new users', 'error');
           return;
         }
         
-        // Send request to create user
-        console.log("Creating new user with username:", data.username);
         const response = await api.post('/users', {
           username: data.username,
           password: data.password,
           role: data.role || 'user'
         });
         
-        console.log("User creation response:", response.data);
-        
-        // If we got a user object back in the response, add it to our list
         if (response.data && response.data.user) {
           setUsers([...users, response.data.user]);
+          showNotification(`New user ${data.username} created successfully`);
         } else if (response.data && response.data.success) {
-          // Otherwise refresh the user list
           fetchData();
+          showNotification('User created successfully');
         }
       }
       
-      // Close modal and reset selection
       setShowUserModal(false);
       setSelectedUser(null);
     } catch (err) {
       console.error("User operation error:", err);
       const errorMessage = err.response?.data?.error || err.message || 'An unknown error occurred';
-      alert('Failed to ' + (selectedUser ? 'update' : 'create') + ' user: ' + errorMessage);
+      showNotification(errorMessage, 'error');
     }
   };
 
@@ -126,8 +131,9 @@ const AdminDashboard = () => {
     try {
       await api.delete(`/users/${userId}`);
       setUsers(users.filter(u => u.id !== userId));
+      showNotification('User deleted successfully');
     } catch (err) {
-      alert('Failed to delete user: ' + err.message);
+      showNotification(`Failed to delete user: ${err.message}`, 'error');
     }
   };
 
@@ -139,14 +145,16 @@ const AdminDashboard = () => {
         setCrimeReports(reports => reports.map(r => 
           r.id === selectedCrimeReport.id ? { ...r, ...data } : r
         ));
+        showNotification('Crime report updated successfully');
       } else {
         const response = await api.post('/admin/crime-reports', data);
         setCrimeReports([...crimeReports, response.data]);
+        showNotification('Crime report created successfully');
       }
       setShowCrimeReportModal(false);
       setSelectedCrimeReport(null);
     } catch (err) {
-      alert('Failed to ' + (selectedCrimeReport ? 'update' : 'create') + ' report: ' + err.message);
+      showNotification(`Failed to ${selectedCrimeReport ? 'update' : 'create'} report: ${err.message}`, 'error');
     }
   };
 
@@ -155,8 +163,9 @@ const AdminDashboard = () => {
     try {
       await api.delete(`/admin/crime-reports/${reportId}`);
       setCrimeReports(reports => reports.filter(r => r.id !== reportId));
+      showNotification('Crime report deleted successfully');
     } catch (err) {
-      alert('Failed to delete report: ' + err.message);
+      showNotification(`Failed to delete report: ${err.message}`, 'error');
     }
   };
 
@@ -167,6 +176,18 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       <Navbar />
+      
+      {/* Notification Toast */}
+      {notification && (
+        <div 
+          className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 p-4 rounded-lg shadow-lg ${
+            notification.type === 'error' ? 'bg-red-600' : 'bg-green-600'
+          } text-white transition-opacity duration-300`}
+        >
+          {notification.message}
+        </div>
+      )}
+
       <main className="container mx-auto p-6">
         <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
 
